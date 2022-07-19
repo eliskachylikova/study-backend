@@ -1,0 +1,14 @@
+spring:
+  profiles:
+    active: prod
+  datasource:
+    url: jdbc:postgresql://${PGHOST}:5432/${PGDATABASE}
+    username: ${PGUSER}
+    password: ${PGPASSWORD}
+  mail:
+    host: ${SMTP_SERVER:#{localhost}}
+
+keycloak:
+  auth-server-url: ${AUTHSERVER}
+  realm: ${AUTHREALM}
+  ssl-required: external

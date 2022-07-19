@@ -1,0 +1,125 @@
+import org.yaml.snakeyaml.Yaml
+buildscript {
+	ext {
+		kotlinVersion = '1.6.10'
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:2.2.+")
+		classpath("org.yaml:snakeyaml:1.21")
+	}
+}
+
+plugins {
+	id 'application'
+	id 'java'
+	id 'groovy'
+	id 'idea'
+	id 'org.springframework.boot' version '2.3.11.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'org.jetbrains.kotlin.jvm' version "${kotlinVersion}"
+	id 'org.jetbrains.kotlin.plugin.jpa' version "${kotlinVersion}"
+	id 'org.jetbrains.kotlin.plugin.spring' version "${kotlinVersion}"
+	id 'org.jetbrains.kotlin.plugin.allopen' version "${kotlinVersion}"
+	id 'org.liquibase.gradle' version '2.0.4'
+	id 'io.freefair.lombok' version '5.3.0'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// spring
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-hateoas'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	// kotlin
+	implementation 'org.jetbrains.kotlin:kotlin-reflect'
+	implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+	implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
+
+	// security
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+	implementation 'org.springframework.security.oauth:spring-security-oauth2:2.4.+'
+	implementation platform('org.keycloak.bom:keycloak-adapter-bom:15.+')
+	implementation 'org.keycloak:keycloak-spring-boot-starter'
+
+	// devtools
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
+	// lombok
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testCompileOnly 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+
+	// swagger
+	implementation "io.springfox:springfox-boot-starter:3.0.0"
+
+	// database
+	implementation 'org.postgresql:postgresql'
+
+	// liquify - database changes performed as file migrations
+	implementation 'org.liquibase:liquibase-core'
+
+	// mapping between DB models and DTOs
+	implementation 'org.modelmapper:modelmapper:2.3+'
+
+	// libraries for Liquibase CLI
+	liquibaseRuntime 'org.liquibase:liquibase-core:4.3.1'
+	liquibaseRuntime 'org.liquibase:liquibase-gradle-plugin:2.0.4'
+	liquibaseRuntime 'org.postgresql:postgresql'
+	liquibaseRuntime 'org.liquibase.ext:liquibase-hibernate5:4.+'
+	liquibaseRuntime 'org.springframework.boot:spring-boot-starter-data-jpa'
+	liquibaseRuntime 'org.yaml:snakeyaml'
+	liquibaseRuntime sourceSets.main.output
+
+	// testing
+	testImplementation 'org.springframework.security:spring-security-test:5.4.+'
+	testImplementation 'com.c4-soft.springaddons:spring-security-oauth2-test-addons:2.4.+' // addon for having keycloak principal (authenticated user) in unit tests
+	testImplementation "org.springframework.boot:spring-boot-starter-test" // spring basic testing
+	implementation "org.codehaus.groovy:groovy-test:2.4.+" // we are using language Groovy for writing tests
+	testImplementation "org.spockframework:spock-core:1.2-groovy-2.4" // test framework Spock
+	testImplementation "org.spockframework:spock-spring:1.2-groovy-2.4" // test framework Spock
+	implementation 'com.mashape.unirest:unirest-java:1.4.+' // to make POST requests to the auth server
+}
+
+liquibase {
+	mainClassName 'org.liquibase.gradle.OutputEnablingLiquibaseRunner'
+	activities {
+		var varUsername
+		var varPassword
+		var varUrl
+		if ([System.env['PGHOST'], System.env['PGDATABASE'], System.env['PGUSER'], System.env['PGPASSWORD']].any {it != null }) {
+			var host = System.env['PGHOST']
+			var database = System.env['PGDATABASE']
+			varUsername = System.env['PGUSER']
+			varPassword = System.env['PGPASSWORD']
+			varUrl = String.format("jdbc:postgresql://%s:5432/%s", host, database)
+		} else {
+			try {
+				def config = new Yaml().loadAll(new File("$projectDir/src/main/resources/application-dev.yaml").newInputStream()).first()
+				println("$projectDir")
+				varUsername = config.spring.datasource.username
+				varPassword = config.spring.datasource.password
+				varUrl = config.spring.datasource.url
+			} catch (FileNotFoundException ignored) {throw ignored}
+		}
+		main {
+			changeLogFile 'src/main/resources/db/changelog/db.changelog-master.yaml'
+			url varUrl
+			username varUsername
+			password varPassword
+			referenceUrl 'hibernate:spring:com.cz.mendelu.mymendelu.studybackend.domain?dialect=org.hibernate.dialect.PostgreSQLDialect&hibernate.physical_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy&hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy'
+		}
+	}
+}
+
+group = 'cz.mendelu.mymendelu'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'

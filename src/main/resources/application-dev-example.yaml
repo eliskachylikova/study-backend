@@ -1,0 +1,25 @@
+# For local development, copy this settings to src/main/resources/application-dev.yaml, uncomment and set your database credentials.
+# Create database mymendelu-backend without any tables. All tables are created with the first bootRun.
+
+# --- PostgreSQL credentials ---
+#spring:
+#  profiles:
+#    active: dev
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/mymendelu-backend
+#    username: postgres
+#    password:
+
+## --- Uncomment following and fill in your Mailtrap credentials if you want to test outgoing emails locally using Mailtrap.io. ---
+#  mail:
+#    host: smtp.mailtrap.io
+#    port: 2525
+#    username: 111111
+#    password: abcdef
+
+## --- Uncomment the following only if you want to use Morpheus server providing information about computers ---
+#morpheus:
+#  auth:
+#    url: http://195.113.194.205/api/server.php
+#    username: smartpef
+#    password:
